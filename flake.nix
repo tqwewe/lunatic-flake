@@ -38,7 +38,7 @@
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rust-bin-override;
     
-        lunatic = craneLib.buildPackage {
+        lunatic-unstable = craneLib.buildPackage {
           pname = "lunatic";
           src = lunatic-git;
           buildInputs = [
@@ -48,28 +48,52 @@
           RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
         };
-      in
-      {
-        packages.default = lunatic;
-        rust-bin = rust-bin-override;
-
-        apps.default = flake-utils.lib.mkApp {
-          drv = lunatic;
+        
+        lunatic = craneLib.buildPackage {
+          src = (craneLib.downloadCargoPackage {
+            name = "lunatic-runtime";
+            version = "0.12.0";
+            checksum = "598719917850e75b2b040a5b13f21696d06493c1098173d0fdab007a3d8b5169";
+            source = "registry+https://github.com/rust-lang/crates.io-index";
+          });
         };
 
-        checks = {
-          inherit lunatic;
-        };
-
-        devShells.default = pkgs.mkShell {
+        mkLunaticDevShell = lunatic-dep: pkgs.mkShell {
           inputsFrom = builtins.attrValues self.checks;
 
           nativeBuildInputs = with pkgs; [
-            lunatic
+            lunatic-dep
             rust-bin-override
             openssl
             pkg-config
           ];
+        };
+      in
+      {
+        rust-bin = rust-bin-override;
+
+        packages = {
+          default = lunatic;
+          unstable = lunatic-unstable;
+        };
+
+        apps = {
+          default = flake-utils.lib.mkApp {
+            drv = lunatic;
+          };
+
+          unstable = flake-utils.lib.mkApp {
+            drv = lunatic-unstable;
+          };
+        };
+
+        checks = {
+          inherit lunatic lunatic-unstable;
+        };
+
+        devShells = {
+          default = mkLunaticDevShell lunatic;
+          unstable = mkLunaticDevShell lunatic-unstable;
         };
       });
 }

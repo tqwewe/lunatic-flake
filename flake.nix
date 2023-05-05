@@ -42,20 +42,26 @@
           pname = "lunatic";
           src = lunatic-git;
           buildInputs = [
-            pkgs.pkgconfig
+            pkgs.pkg-config
             pkgs.openssl
           ];
           RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+          doCheck = false;
         };
         
         lunatic = craneLib.buildPackage {
           src = (craneLib.downloadCargoPackage {
             name = "lunatic-runtime";
-            version = "0.12.0";
-            checksum = "598719917850e75b2b040a5b13f21696d06493c1098173d0fdab007a3d8b5169";
+            version = "0.13.2";
+            checksum = "0424a06ac3b54ff2b9472c278079f53f3fa46efdaf3fd25e023f6e4d8262cf80";
             source = "registry+https://github.com/rust-lang/crates.io-index";
           });
+          buildInputs = [
+            pkgs.pkg-config
+            pkgs.openssl
+          ];
+          doCheck = false;
         };
 
         mkLunaticDevShell = lunatic-dep: pkgs.mkShell {
